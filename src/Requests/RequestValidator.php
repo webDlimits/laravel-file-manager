@@ -4,7 +4,7 @@ namespace Alexusmai\LaravelFileManager\Requests;
 
 use Alexusmai\LaravelFileManager\Services\ConfigService\ConfigRepository;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Storage;
+use Storage;
 
 class RequestValidator extends FormRequest
 {
@@ -15,7 +15,7 @@ class RequestValidator extends FormRequest
      *
      * @return bool
      */
-    public function authorize(): bool
+    public function authorize()
     {
         return true;
     }
@@ -25,7 +25,7 @@ class RequestValidator extends FormRequest
      *
      * @return array
      */
-    public function rules(): array
+    public function rules()
     {
         $config = resolve(ConfigRepository::class);
 
@@ -58,7 +58,7 @@ class RequestValidator extends FormRequest
     /**
      * Not found message
      *
-     * @return string
+     * @return array|\Illuminate\Contracts\Translation\Translator|string|null
      */
     public function message()
     {

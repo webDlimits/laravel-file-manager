@@ -7,31 +7,31 @@ use Alexusmai\LaravelFileManager\Events\UnzipFailed;
 use Alexusmai\LaravelFileManager\Events\ZipCreated;
 use Alexusmai\LaravelFileManager\Events\ZipFailed;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 use ZipArchive;
+use Storage;
 
 class Zip
 {
     protected $zip;
     protected $request;
-    //protected $pathPrefix;
+    protected $pathPrefix;
 
     /**
      * Zip constructor.
      *
-     * @param  ZipArchive  $zip
-     * @param  Request  $request
+     * @param ZipArchive $zip
+     * @param Request    $request
      */
     public function __construct(ZipArchive $zip, Request $request)
     {
         $this->zip = $zip;
         $this->request = $request;
-        //$this->pathPrefix = Storage::disk($request->input('disk'))->path();
-            //->getDriver()
-            //->getAdapter()
-            //->getPathPrefix();
+        $this->pathPrefix = Storage::disk($request->input('disk'))
+            ->getDriver()
+            ->getAdapter()
+            ->getPathPrefix();
     }
 
     /**
@@ -39,7 +39,7 @@ class Zip
      *
      * @return array
      */
-    public function create(): array
+    public function create()
     {
 
         if ($this->createArchive()) {
@@ -64,7 +64,7 @@ class Zip
      *
      * @return array
      */
-    public function extract(): array
+    public function extract()
     {
         if ($this->extractArchive()) {
             return [
@@ -83,18 +83,12 @@ class Zip
         ];
     }
 
-
-    protected function prefixer($path): string
-    {
-        return Storage::disk($this->request->input('disk'))->path($path);
-    }
-
     /**
      * Create zip archive
      *
      * @return bool
      */
-    protected function createArchive(): bool
+    protected function createArchive()
     {
         // elements list
         $elements = $this->request->input('elements');
@@ -109,7 +103,7 @@ class Zip
             if ($elements['files']) {
                 foreach ($elements['files'] as $file) {
                     $this->zip->addFile(
-                        $this->prefixer($file),
+                        $this->pathPrefix.$file,
                         basename($file)
                     );
                 }
@@ -137,9 +131,9 @@ class Zip
      *
      * @return bool
      */
-    protected function extractArchive(): bool
+    protected function extractArchive()
     {
-        $zipPath = $this->prefixer($this->request->input('path'));
+        $zipPath = $this->pathPrefix.$this->request->input('path');
 
         $rootPath = dirname($zipPath);
 
@@ -163,7 +157,7 @@ class Zip
     /**
      * Add directories - recursive
      *
-     * @param  array  $directories
+     * @param array $directories
      */
     protected function addDirs(array $directories)
     {
@@ -171,7 +165,7 @@ class Zip
 
             // Create recursive directory iterator
             $files = new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator($this->prefixer($directory)),
+                new RecursiveDirectoryIterator($this->pathPrefix.$directory),
                 RecursiveIteratorIterator::LEAVES_ONLY
             );
 
@@ -201,7 +195,7 @@ class Zip
      *
      * @return string
      */
-    protected function createName(): string
+    protected function createName()
     {
         return $this->fullPath($this->request->input('path'))
             .$this->request->input('name');
@@ -214,8 +208,8 @@ class Zip
      *
      * @return string
      */
-    protected function fullPath($path): string
+    protected function fullPath($path)
     {
-        return $path ? $this->prefixer($path).'/' : $this->prefixer('');
+        return $path ? $this->pathPrefix.$path.'/' : $this->pathPrefix;
     }
 }

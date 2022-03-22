@@ -3,9 +3,8 @@
 namespace Alexusmai\LaravelFileManager\Traits;
 
 use Alexusmai\LaravelFileManager\Services\ACLService\ACL;
-use Illuminate\Support\Facades\Storage;
-use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
-use League\Flysystem\FilesystemException;
+use Illuminate\Support\Arr;
+use Storage;
 
 trait ContentTrait
 {
@@ -13,17 +12,19 @@ trait ContentTrait
     /**
      * Get content for the selected disk and path
      *
-     * @param $disk
-     * @param  null  $path
+     * @param       $disk
+     * @param  null $path
      *
      * @return array
-     * @throws FilesystemException
      */
-    public function getContent($disk, $path = null): array
+    public function getContent($disk, $path = null)
     {
-        $content = Storage::disk($disk)->listContents($path ?: '')->toArray();
+        $content = Storage::disk($disk)->listContents($path);
 
+        // get a list of directories
         $directories = $this->filterDir($disk, $content);
+
+        // get a list of files
         $files = $this->filterFile($disk, $content);
 
         return compact('directories', 'files');
@@ -32,15 +33,14 @@ trait ContentTrait
     /**
      * Get directories with properties
      *
-     * @param $disk
-     * @param  null  $path
+     * @param       $disk
+     * @param  null $path
      *
      * @return array
-     * @throws FilesystemException
      */
-    public function directoriesWithProperties($disk, $path = null): array
+    public function directoriesWithProperties($disk, $path = null)
     {
-        $content = Storage::disk($disk)->listContents($path ?: '')->toArray();
+        $content = Storage::disk($disk)->listContents($path);
 
         return $this->filterDir($disk, $content);
     }
@@ -49,14 +49,13 @@ trait ContentTrait
      * Get files with properties
      *
      * @param       $disk
-     * @param  null  $path
+     * @param  null $path
      *
      * @return array
-     * @throws FilesystemException
      */
-    public function filesWithProperties($disk, $path = null): array
+    public function filesWithProperties($disk, $path = null)
     {
-        $content = Storage::disk($disk)->listContents($path ?: '');
+        $content = Storage::disk($disk)->listContents($path);
 
         return $this->filterFile($disk, $content);
     }
@@ -65,18 +64,18 @@ trait ContentTrait
      * Get directories for tree module
      *
      * @param $disk
-     * @param  null  $path
+     * @param $path
      *
      * @return array
-     * @throws FilesystemException
      */
-    public function getDirectoriesTree($disk, $path = null): array
+    public function getDirectoriesTree($disk, $path = null)
     {
         $directories = $this->directoriesWithProperties($disk, $path);
 
         foreach ($directories as $index => $dir) {
             $directories[$index]['props'] = [
-                'hasSubdirectories' => (bool) Storage::disk($disk)->directories($dir['path']),
+                'hasSubdirectories' => Storage::disk($disk)
+                    ->directories($dir['path']) ? true : false,
             ];
         }
 
@@ -86,90 +85,83 @@ trait ContentTrait
     /**
      * File properties
      *
-     * @param $disk
-     * @param $path
+     * @param       $disk
+     * @param  null $path
      *
      * @return mixed
      */
-    public function fileProperties($disk, $path = null): mixed
+    public function fileProperties($disk, $path = null)
     {
+        $file = Storage::disk($disk)->getMetadata($path);
+
         $pathInfo = pathinfo($path);
 
-        $properties = [
-            'type'       => 'file',
-            'path'       => $path,
-            'basename'   => $pathInfo['basename'],
-            'dirname'    => $pathInfo['dirname'] === '.' ? '' : $pathInfo['dirname'],
-            'extension'  => $pathInfo['extension'] ?? '',
-            'filename'   => $pathInfo['filename'],
-            'size'       => Storage::disk($disk)->size($path),
-            'timestamp'  => Storage::disk($disk)->lastModified($path),
-            'visibility' => Storage::disk($disk)->getVisibility($path),
-        ];
+        $file['basename'] = $pathInfo['basename'];
+        $file['dirname'] = $pathInfo['dirname'] === '.' ? ''
+            : $pathInfo['dirname'];
+        $file['extension'] = isset($pathInfo['extension'])
+            ? $pathInfo['extension'] : '';
+        $file['filename'] = $pathInfo['filename'];
 
         // if ACL ON
         if ($this->configRepository->getAcl()) {
-            return $this->aclFilter($disk, [$properties])[0];
+            return $this->aclFilter($disk, [$file])[0];
         }
 
-        return $properties;
+        return $file;
     }
 
     /**
      * Get properties for the selected directory
      *
      * @param       $disk
-     * @param  null  $path
+     * @param  null $path
      *
      * @return array|false
      */
-    public function directoryProperties($disk, $path = null): bool|array
+    public function directoryProperties($disk, $path = null)
     {
-        $adapter = Storage::drive($disk)->getAdapter();
+        $directory = Storage::disk($disk)->getMetadata($path);
 
         $pathInfo = pathinfo($path);
 
-        $properties = [
-            'type'       => 'dir',
-            'path'       => $path,
-            'basename'   => $pathInfo['basename'],
-            'dirname'    => $pathInfo['dirname'] === '.' ? '' : $pathInfo['dirname'],
-            'timestamp'  => $adapter instanceof AwsS3V3Adapter ? null : Storage::disk($disk)->lastModified($path),
-            'visibility' => $adapter instanceof AwsS3V3Adapter ? null : Storage::disk($disk)->getVisibility($path),
-        ];
+        /**
+         * S3 didn't return metadata for directories
+         */
+        if (!$directory) {
+            $directory['path'] = $path;
+            $directory['type'] = 'dir';
+        }
+
+        $directory['basename'] = $pathInfo['basename'];
+        $directory['dirname'] = $pathInfo['dirname'] === '.' ? ''
+            : $pathInfo['dirname'];
 
         // if ACL ON
         if ($this->configRepository->getAcl()) {
-            return $this->aclFilter($disk, [$properties])[0];
+            return $this->aclFilter($disk, [$directory])[0];
         }
 
-        return $properties;
+        return $directory;
     }
 
     /**
      * Get only directories
      *
-     * @param $disk
      * @param $content
      *
      * @return array
      */
-    protected function filterDir($disk, $content): array
+    protected function filterDir($disk, $content)
     {
         // select only dir
-        $dirsList = array_filter($content, fn($item) => $item['type'] === 'dir');
+        $dirsList = Arr::where($content, function ($item) {
+            return $item['type'] === 'dir';
+        });
 
+        // remove 'filename' param
         $dirs = array_map(function ($item) {
-            $pathInfo = pathinfo($item['path']);
-
-            return [
-                'type'       => $item['type'],
-                'path'       => $item['path'],
-                'basename'   => $pathInfo['basename'],
-                'dirname'    => $pathInfo['dirname'] === '.' ? '' : $pathInfo['dirname'],
-                'timestamp'  => $item['lastModified'],
-                'visibility' => $item['visibility'],
-            ];
+            return Arr::except($item, ['filename']);
         }, $dirsList);
 
         // if ACL ON
@@ -188,26 +180,12 @@ trait ContentTrait
      *
      * @return array
      */
-    protected function filterFile($disk, $content): array
+    protected function filterFile($disk, $content)
     {
-        // select only dir
-        $filesList = array_filter($content, fn($item) => $item['type'] === 'file');
-
-        $files = array_map(function ($item) {
-            $pathInfo = pathinfo($item['path']);
-
-            return [
-                'type'       => $item['type'],
-                'path'       => $item['path'],
-                'basename'   => $pathInfo['basename'],
-                'dirname'    => $pathInfo['dirname'] === '.' ? '' : $pathInfo['dirname'],
-                'extension'  => $pathInfo['extension'] ?? '',
-                'filename'   => $pathInfo['filename'],
-                'size'       => $item['fileSize'],
-                'timestamp'  => $item['lastModified'],
-                'visibility' => $item['visibility'],
-            ];
-        }, $filesList);
+        // select only files
+        $files = Arr::where($content, function ($item) {
+            return $item['type'] === 'file';
+        });
 
         // if ACL ON
         if ($this->configRepository->getAcl()) {
@@ -225,7 +203,7 @@ trait ContentTrait
      *
      * @return mixed
      */
-    protected function aclFilter($disk, $content): mixed
+    protected function aclFilter($disk, $content)
     {
         $acl = resolve(ACL::class);
 
@@ -244,5 +222,42 @@ trait ContentTrait
         }
 
         return $withAccess;
+    }
+
+    // dlimits edits
+    public function getSearchContent($disk, $path, $search)
+    {
+        $items = $this->getAllItemsBySearch($disk, null, $search);
+        $directories = $items['directories'];
+        $files = $items['files'];
+        return compact('directories', 'files');
+    }
+
+    public function getAllItemsBySearch($disk, $directory, $search){
+        $fileList = [];
+        $directoryList = [];
+
+        if (!is_null($directory) && str_contains($directory['basename'], $search)){
+            array_push($directoryList, $directory);
+        }
+
+        $content = Storage::disk($disk)->listContents(is_null($directory)?'':$directory['path']);
+        // get a list of directories
+        $directories = $this->filterDir($disk, $content);
+        // get a list of files
+        $files = $this->filterFile($disk, $content);
+
+
+        foreach ($files as $file){
+            if (str_contains(strtoupper(str_replace(' ','',$file['filename'])), strtoupper(str_replace(' ','',$search)))){
+                array_push($fileList, $file);
+            }
+        }
+        foreach ($directories as $directory){
+            $items = $this->getAllItemsBySearch($disk, $directory, $search);
+            array_push($fileList, ...$items['files']);
+            array_push($directoryList, ...$items['directories']);
+        }
+        return ['files' => $fileList, 'directories' => $directoryList];
     }
 }

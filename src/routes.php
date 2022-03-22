@@ -1,8 +1,6 @@
 <?php
 
-use Alexusmai\LaravelFileManager\Controllers\FileManagerController;
 use Alexusmai\LaravelFileManager\Services\ConfigService\ConfigRepository;
-use Illuminate\Support\Facades\Route;
 
 $config = resolve(ConfigRepository::class);
 
@@ -22,75 +20,80 @@ Route::group([
     'namespace'  => 'Alexusmai\LaravelFileManager\Controllers',
 ], function () {
 
-    Route::get('initialize', [FileManagerController::class, 'initialize'])
+    Route::get('initialize', 'FileManagerController@initialize')
         ->name('fm.initialize');
-
-    Route::get('content', [FileManagerController::class, 'content'])
-        ->name('fm.content');
-
-    Route::get('tree', [FileManagerController::class, 'tree'])
+    
+    Route::get('search-content', 'FileManagerController@searchContent')
+        ->name('fm.searchContent');
+    
+    Route::get('tree', 'FileManagerController@tree')
         ->name('fm.tree');
 
-    Route::get('select-disk', [FileManagerController::class, 'selectDisk'])
+    Route::get('select-disk', 'FileManagerController@selectDisk')
         ->name('fm.select-disk');
 
-    Route::post('upload', [FileManagerController::class, 'upload'])
+    Route::post('upload', 'FileManagerController@upload')
         ->name('fm.upload');
 
-    Route::post('delete', [FileManagerController::class, 'delete'])
+    Route::post('delete', 'FileManagerController@delete')
         ->name('fm.delete');
 
-    Route::post('paste', [FileManagerController::class, 'paste'])
+    Route::post('paste', 'FileManagerController@paste')
         ->name('fm.paste');
 
-    Route::post('rename', [FileManagerController::class, 'rename'])
+    Route::post('rename', 'FileManagerController@rename')
         ->name('fm.rename');
 
-    Route::get('download', [FileManagerController::class, 'download'])
+    Route::get('download', 'FileManagerController@download')
         ->name('fm.download');
 
-    Route::get('thumbnails', [FileManagerController::class, 'thumbnails'])
+    Route::get('thumbnails', 'FileManagerController@thumbnails')
         ->name('fm.thumbnails');
 
-    Route::get('preview', [FileManagerController::class, 'preview'])
+    Route::get('preview', 'FileManagerController@preview')
         ->name('fm.preview');
 
-    Route::get('url', [FileManagerController::class, 'url'])
+    Route::get('url', 'FileManagerController@url')
         ->name('fm.url');
 
-    Route::post('create-directory', [FileManagerController::class, 'createDirectory'])
+    Route::post('create-directory', 'FileManagerController@createDirectory')
         ->name('fm.create-directory');
 
-    Route::post('create-file', [FileManagerController::class, 'createFile'])
+    Route::post('create-file', 'FileManagerController@createFile')
         ->name('fm.create-file');
 
-    Route::post('update-file', [FileManagerController::class, 'updateFile'])
+    Route::post('update-file', 'FileManagerController@updateFile')
         ->name('fm.update-file');
 
-    Route::get('stream-file', [FileManagerController::class, 'streamFile'])
+    Route::get('stream-file', 'FileManagerController@streamFile')
         ->name('fm.stream-file');
 
-    Route::post('zip', [FileManagerController::class, 'zip'])
+    Route::post('zip', 'FileManagerController@zip')
         ->name('fm.zip');
 
-    Route::post('unzip', [FileManagerController::class, 'unzip'])
+    Route::post('unzip', 'FileManagerController@unzip')
         ->name('fm.unzip');
 
     // Route::get('properties', 'FileManagerController@properties');
 
     // Integration with editors
-    Route::get('ckeditor', [FileManagerController::class, 'ckeditor'])
+    Route::get('ckeditor', 'FileManagerController@ckeditor')
         ->name('fm.ckeditor');
 
-    Route::get('tinymce', [FileManagerController::class, 'tinymce'])
+    Route::get('tinymce', 'FileManagerController@tinymce')
         ->name('fm.tinymce');
 
-    Route::get('tinymce5', [FileManagerController::class, 'tinymce5'])
+    Route::get('tinymce5', 'FileManagerController@tinymce5')
         ->name('fm.tinymce5');
 
-    Route::get('summernote', [FileManagerController::class, 'summernote'])
+    Route::get('summernote', 'FileManagerController@summernote')
         ->name('fm.summernote');
 
-    Route::get('fm-button', [FileManagerController::class, 'fmButton'])
+    Route::get('fm-button', 'FileManagerController@fmButton')
         ->name('fm.fm-button');
+    
+    // dlimits edits 
+    Route::get('content', 'FileManagerController@content')
+        ->name('fm.content');
+    
 });

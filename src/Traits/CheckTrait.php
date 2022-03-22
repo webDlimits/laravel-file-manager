@@ -2,7 +2,7 @@
 
 namespace Alexusmai\LaravelFileManager\Traits;
 
-use Illuminate\Support\Facades\Storage;
+use Storage;
 
 trait CheckTrait
 {
@@ -14,7 +14,7 @@ trait CheckTrait
      *
      * @return bool
      */
-    public function checkDisk($name): bool
+    public function checkDisk($name)
     {
         return in_array($name, $this->configRepository->getDiskList())
             && array_key_exists($name, config('filesystems.disks'));
@@ -28,7 +28,7 @@ trait CheckTrait
      *
      * @return bool
      */
-    public function checkPath($disk, $path): bool
+    public function checkPath($disk, $path)
     {
         // check disk name
         if (!$this->checkDisk($disk)) {
@@ -48,7 +48,7 @@ trait CheckTrait
      *
      * @return array
      */
-    public function notFoundMessage(): array
+    public function notFoundMessage()
     {
         return [
             'result' => [

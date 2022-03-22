@@ -20,14 +20,8 @@ use Alexusmai\LaravelFileManager\Events\Unzip as UnzipEvent;
 use Alexusmai\LaravelFileManager\Requests\RequestValidator;
 use Alexusmai\LaravelFileManager\FileManager;
 use Alexusmai\LaravelFileManager\Services\Zip;
-use Illuminate\Contracts\Container\BindingResolutionException;
-use Illuminate\Contracts\View\Factory;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
-use Illuminate\View\View;
-use League\Flysystem\FilesystemException;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Http\Request;
 
 class FileManagerController extends Controller
 {
@@ -39,7 +33,7 @@ class FileManagerController extends Controller
     /**
      * FileManagerController constructor.
      *
-     * @param  FileManager  $fm
+     * @param FileManager $fm
      */
     public function __construct(FileManager $fm)
     {
@@ -49,9 +43,9 @@ class FileManagerController extends Controller
     /**
      * Initialize file manager
      *
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function initialize(): JsonResponse
+    public function initialize()
     {
         event(new BeforeInitialization());
 
@@ -63,12 +57,11 @@ class FileManagerController extends Controller
     /**
      * Get files and directories for the selected path and disk
      *
-     * @param  RequestValidator  $request
+     * @param RequestValidator $request
      *
-     * @return JsonResponse
-     * @throws FilesystemException
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function content(RequestValidator $request): JsonResponse
+    public function content(RequestValidator $request)
     {
         return response()->json(
             $this->fm->content(
@@ -81,12 +74,11 @@ class FileManagerController extends Controller
     /**
      * Directory tree
      *
-     * @param  RequestValidator  $request
+     * @param RequestValidator $request
      *
-     * @return JsonResponse
-     * @throws FilesystemException
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function tree(RequestValidator $request): JsonResponse
+    public function tree(RequestValidator $request)
     {
         return response()->json(
             $this->fm->tree(
@@ -99,11 +91,11 @@ class FileManagerController extends Controller
     /**
      * Check the selected disk
      *
-     * @param  RequestValidator  $request
+     * @param RequestValidator $request
      *
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function selectDisk(RequestValidator $request): JsonResponse
+    public function selectDisk(RequestValidator $request)
     {
         event(new DiskSelected($request->input('disk')));
 
@@ -118,11 +110,11 @@ class FileManagerController extends Controller
     /**
      * Upload files
      *
-     * @param  RequestValidator  $request
+     * @param RequestValidator $request
      *
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function upload(RequestValidator $request): JsonResponse
+    public function upload(RequestValidator $request)
     {
         event(new FilesUploading($request));
 
@@ -141,11 +133,11 @@ class FileManagerController extends Controller
     /**
      * Delete files and folders
      *
-     * @param  RequestValidator  $request
+     * @param RequestValidator $request
      *
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function delete(RequestValidator $request): JsonResponse
+    public function delete(RequestValidator $request)
     {
         event(new Deleting($request));
 
@@ -160,11 +152,11 @@ class FileManagerController extends Controller
     /**
      * Copy / Cut files and folders
      *
-     * @param  RequestValidator  $request
+     * @param RequestValidator $request
      *
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function paste(RequestValidator $request): JsonResponse
+    public function paste(RequestValidator $request)
     {
         event(new Paste($request));
 
@@ -180,11 +172,11 @@ class FileManagerController extends Controller
     /**
      * Rename
      *
-     * @param  RequestValidator  $request
+     * @param RequestValidator $request
      *
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function rename(RequestValidator $request): JsonResponse
+    public function rename(RequestValidator $request)
     {
         event(new Rename($request));
 
@@ -200,11 +192,11 @@ class FileManagerController extends Controller
     /**
      * Download file
      *
-     * @param  RequestValidator  $request
+     * @param RequestValidator $request
      *
-     * @return StreamedResponse
+     * @return mixed
      */
-    public function download(RequestValidator $request): StreamedResponse
+    public function download(RequestValidator $request)
     {
         event(new Download($request));
 
@@ -217,12 +209,12 @@ class FileManagerController extends Controller
     /**
      * Create thumbnails
      *
-     * @param  RequestValidator  $request
+     * @param RequestValidator $request
      *
-     * @return Response|mixed
-     * @throws BindingResolutionException
+     * @return \Illuminate\Http\Response|mixed
+     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
      */
-    public function thumbnails(RequestValidator $request): mixed
+    public function thumbnails(RequestValidator $request)
     {
         return $this->fm->thumbnails(
             $request->input('disk'),
@@ -233,11 +225,12 @@ class FileManagerController extends Controller
     /**
      * Image preview
      *
-     * @param  RequestValidator  $request
+     * @param RequestValidator $request
      *
      * @return mixed
+     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
      */
-    public function preview(RequestValidator $request): mixed
+    public function preview(RequestValidator $request)
     {
         return $this->fm->preview(
             $request->input('disk'),
@@ -248,11 +241,11 @@ class FileManagerController extends Controller
     /**
      * File url
      *
-     * @param  RequestValidator  $request
+     * @param RequestValidator $request
      *
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function url(RequestValidator $request): JsonResponse
+    public function url(RequestValidator $request)
     {
         return response()->json(
             $this->fm->url(
@@ -265,11 +258,11 @@ class FileManagerController extends Controller
     /**
      * Create new directory
      *
-     * @param  RequestValidator  $request
+     * @param RequestValidator $request
      *
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function createDirectory(RequestValidator $request): JsonResponse
+    public function createDirectory(RequestValidator $request)
     {
         event(new DirectoryCreating($request));
 
@@ -289,11 +282,11 @@ class FileManagerController extends Controller
     /**
      * Create new file
      *
-     * @param  RequestValidator  $request
+     * @param RequestValidator $request
      *
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function createFile(RequestValidator $request): JsonResponse
+    public function createFile(RequestValidator $request)
     {
         event(new FileCreating($request));
 
@@ -313,11 +306,11 @@ class FileManagerController extends Controller
     /**
      * Update file
      *
-     * @param  RequestValidator  $request
+     * @param RequestValidator $request
      *
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function updateFile(RequestValidator $request): JsonResponse
+    public function updateFile(RequestValidator $request)
     {
         event(new FileUpdate($request));
 
@@ -333,11 +326,11 @@ class FileManagerController extends Controller
     /**
      * Stream file
      *
-     * @param  RequestValidator  $request
+     * @param RequestValidator $request
      *
      * @return mixed
      */
-    public function streamFile(RequestValidator $request): mixed
+    public function streamFile(RequestValidator $request)
     {
         return $this->fm->streamFile(
             $request->input('disk'),
@@ -348,8 +341,8 @@ class FileManagerController extends Controller
     /**
      * Create zip archive
      *
-     * @param  RequestValidator  $request
-     * @param  Zip  $zip
+     * @param RequestValidator $request
+     * @param Zip              $zip
      *
      * @return array
      */
@@ -363,8 +356,8 @@ class FileManagerController extends Controller
     /**
      * Extract zip archive
      *
-     * @param  RequestValidator  $request
-     * @param  Zip  $zip
+     * @param RequestValidator $request
+     * @param Zip              $zip
      *
      * @return array
      */
@@ -378,9 +371,11 @@ class FileManagerController extends Controller
     /**
      * Integration with ckeditor 4
      *
-     * @return Factory|View
+     * @param Request $request
+     *
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
-    public function ckeditor(): Factory|View
+    public function ckeditor()
     {
         return view('file-manager::ckeditor');
     }
@@ -388,9 +383,9 @@ class FileManagerController extends Controller
     /**
      * Integration with TinyMCE v4
      *
-     * @return Factory|View
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
-    public function tinymce(): Factory|View
+    public function tinymce()
     {
         return view('file-manager::tinymce');
     }
@@ -398,9 +393,9 @@ class FileManagerController extends Controller
     /**
      * Integration with TinyMCE v5
      *
-     * @return Factory|View
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
-    public function tinymce5(): Factory|View
+    public function tinymce5()
     {
         return view('file-manager::tinymce5');
     }
@@ -408,9 +403,9 @@ class FileManagerController extends Controller
     /**
      * Integration with SummerNote
      *
-     * @return Factory|View
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
-    public function summernote(): Factory|View
+    public function summernote()
     {
         return view('file-manager::summernote');
     }
@@ -418,10 +413,30 @@ class FileManagerController extends Controller
     /**
      * Simple integration with input field
      *
-     * @return Factory|View
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
-    public function fmButton(): Factory|View
+    public function fmButton()
     {
         return view('file-manager::fmButton');
+    }
+
+    // dlimits edits 
+    public function searchContent(RequestValidator $request)
+    {
+        if ($request->input('search') == ''){
+            return response()->json(
+                $this->fm->content(
+                    $request->input('disk'),
+                    $request->input('path')
+                )
+            );
+        }
+        return response()->json(
+            $this->fm->searchContent(
+                $request->input('disk'),
+                $request->input('path'),
+                $request->input('search')
+            )
+        );
     }
 }
