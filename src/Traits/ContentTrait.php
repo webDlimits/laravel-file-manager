@@ -227,13 +227,23 @@ trait ContentTrait
     // dlimits edits
     public function getSearchContent($disk, $path, $search)
     {
-        $items = $this->getAllItemsBySearch($disk, null, $search);
+        if($path){
+            $pathDir = ['basename' => null  , 'path' => $path];
+        }else{
+            $pathDir = null;
+        }
+
+        $items = $this->getAllItemsBySearch($disk, $pathDir, $search,0);
         $directories = $items['directories'];
         $files = $items['files'];
         return compact('directories', 'files');
     }
 
-    public function getAllItemsBySearch($disk, $directory, $search){
+    public function getAllItemsBySearch($disk, $directory, $search,$level){
+        if($level > 2){
+            return ['files' => [], 'directories' => []];
+        }
+        $level = $level + 1;
         $fileList = [];
         $directoryList = [];
 
@@ -254,10 +264,11 @@ trait ContentTrait
             }
         }
         foreach ($directories as $directory){
-            $items = $this->getAllItemsBySearch($disk, $directory, $search);
+            $items = $this->getAllItemsBySearch($disk, $directory, $search , $level);
             array_push($fileList, ...$items['files']);
             array_push($directoryList, ...$items['directories']);
         }
+
         return ['files' => $fileList, 'directories' => $directoryList];
     }
 }
